@@ -55,7 +55,3 @@ class Crypter:
         raw_data = bytes(a ^ b for (a, b) in zip(encrypted_data, raw_key))
         with open("d_" + filename, "wb") as decrypted_out:
             decrypted_out.write(raw_data)
-
-
-Crypter.encrypt("qrandom.py")
-Crypter.decrypt("qrandom.py")
