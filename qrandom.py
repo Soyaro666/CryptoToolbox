@@ -2,6 +2,7 @@ import json
 import random
 import requests
 import string
+import secrets
 
 
 class QRandom:
@@ -49,13 +50,29 @@ class QRandom:
         return result
 
     def set(self):
-        tmp_data = QRandom._quantum(length=self.length,
-                                    encoding=self.encoding,
-                                    size=self.size)
+        tmp_data = {"success": False}
+        try:
+            tmp_data = QRandom._quantum(length=self.length,
+                                        encoding=self.encoding,
+                                        size=self.size)
+        except (ConnectionError, TimeoutError):
+            tmp_rng = []
+            if self.encoding == "hex16":
+                for i in range(self.length):
+                    tmp_rng.append([])
+                    for j in range(self.size):
+                        tmp_rng[-1].append(secrets.token_hex(1))
+            elif self.encoding == "uint16":
+                for i in range(self.length):
+                    tmp_rng.append(secrets.randbelow(65535))
+            elif self.encoding == "uint8":
+                for i in range(self.length):
+                    tmp_rng.append(secrets.randbelow(255))
+            tmp_data = {"success": True, "data": tmp_rng}
         if tmp_data["success"]:
             self._data = tmp_data["data"]
         else:
-            raise Exception("error in contacting qrng.anu.edu.au")
+            raise Exception("error in QRandom.set(): success = False")
         self.index = 0
         return True
 
