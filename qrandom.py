@@ -5,32 +5,6 @@ import string
 
 
 class QRandom:
-    def generate_pwd(self, **params):
-        pwd = ''
-        num = params.get("num", 16)
-        characters = params.get("charset", QRandom._alphabet())
-        random.shuffle(characters)
-        for i in range(num):
-            rng = int(round(self.get(max=len(characters) - 1)))
-            pwd += characters[rng]
-        return pwd
-
-    def get(self, **params):
-        if not isinstance(self.seed, QRandom):
-            self.seed = QRandom(length=self.length,
-                                encoding=self.encoding,
-                                size=self.size)
-        start = params.get("min", 0)
-        end = params.get("max", 0)
-        if start > end:
-            start, end = end, start
-        rng = round(float(int(self.seed)), 5)
-        rng = round(rng / 65535, 5)
-        tmp = end - start
-        result = round(rng * tmp, 5)
-        result += start
-        return result
-
     @staticmethod
     def _alphabet():
         characters = []
@@ -44,36 +18,77 @@ class QRandom:
     def _quantum(**params):
         length = str(params.get("length", 16))
         encoding = params.get("encoding", "uint8")
-        size = params.get("size", 1)
         url = f"https://qrng.anu.edu.au/API/jsonI.php?length={length}&type={encoding}"
         if encoding == "hex16":
-            size = str(params.get("size", 6))
-            url = url + f"&size={size}"
+            size = str(params.get("size", 1))
+            url = f"{url}&size={size}"
         data = requests.get(url).text
         result = json.loads(data)
         return result
 
+    def generate_pwd(self, **params):
+        pwd = ''
+        num = params.get("num", 16)
+        characters = params.get("charset", QRandom._alphabet())
+        random.shuffle(characters)
+        for i in range(num):
+            rng = int(round(self.get(max=len(characters) - 1)))
+            pwd += characters[rng]
+        return pwd
+
+    def get(self, **params):
+        start = int(params.get("min", 0))
+        end = int(params.get("max", 0))
+        if start > end:
+            start, end = end, start
+        rng = round(float(self), 5)
+        rng = round(rng / 65535, 5)
+        tmp = end - start
+        result = round(rng * tmp, 5)
+        result += start
+        return result
+
+    def set(self):
+        tmp_data = QRandom._quantum(length=self.length,
+                                    encoding=self.encoding,
+                                    size=self.size)
+        if tmp_data["success"]:
+            self._data = tmp_data["data"]
+        else:
+            raise Exception("error in contacting qrng.anu.edu.au")
+        self.index = 0
+        return True
+
     def __int__(self):
+        result = int(self._data[self.index])
         self.index += 1
-        if self.index >= len(self._data):
-            self.index -= len(self._data)
-        return int(self._data[self.index])
+        if self.index > len(self._data):
+            self.set()
+        return result
+
+    def __float__(self):
+        result = float(self._data[self.index])
+        self.index += 1
+        if self.index > len(self._data):
+            self.set()
+        return result
 
     def __repr__(self):
+        result = self._data[self.index]
         self.index += 1
-        if self.index >= len(self._data):
-            self.index -= len(self._data)
-        return self._data[self.index]
+        if self.index > len(self._data):
+            self.set()
+        return result
 
     def __str__(self):
+        result = str(f"random number: {self._data[self.index]}")
         self.index += 1
-        if self.index >= len(self._data):
-            self.index -= len(self._data)
-        return str(f"random number: {self._data[self.index]}")
+        if self.index > len(self._data):
+            self.set()
+        return result
 
     def __init__(self, **params):
         self.index = 0
-        self.seed = 0
         self._data = []
         codings = ["uint8", "uint16", "hex16"]
         self.length = params.get("length", 1024)
@@ -83,10 +98,4 @@ class QRandom:
         if self.encoding not in codings:
             raise ValueError(f"encoding must be one of: {str(codings)}")
         self.size = params.get("size", 1)
-        tmp_data = QRandom._quantum(length=self.length,
-                                    encoding=self.encoding,
-                                    size=self.size)
-        if tmp_data["success"]:
-            self._data = tmp_data["data"]
-        else:
-            raise Exception("error in contacting qrng.anu.edu.au")
+        self.set()
