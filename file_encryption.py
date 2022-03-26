@@ -38,20 +38,34 @@ class Crypter:
 
     @staticmethod
     def encrypt(filename):
-        raw_data = open(filename, "rb").read()
-
-        file_size = len(raw_data)
-        raw_key = Crypter.generate_key(file_size)
-        with open(filename + ".key", "wb") as key_out:
-            key_out.write(raw_key)
-        encrypted = bytes(a ^ b for (a, b) in zip(raw_data, raw_key))
-        with open(filename + ".dat", "wb") as encrypted_out:
-            encrypted_out.write(encrypted)
+        try:
+            raw_data = open(filename, "rb").read()
+        except IOError:
+            print(f"file {filename} not found.")
+        else:
+            file_size = len(raw_data)
+            raw_key = Crypter.generate_key(file_size)
+            with open(filename + ".key", "wb") as key_out:
+                key_out.write(raw_key)
+            encrypted = bytes(a ^ b for (a, b) in zip(raw_data, raw_key))
+            with open(filename + ".dat", "wb") as encrypted_out:
+                encrypted_out.write(encrypted)
 
     @staticmethod
-    def decrypt(filename):
-        encrypted_data = open(filename + ".dat", "rb").read()
-        raw_key = open(filename + ".key", "rb").read()
-        raw_data = bytes(a ^ b for (a, b) in zip(encrypted_data, raw_key))
-        with open("d_" + filename, "wb") as decrypted_out:
-            decrypted_out.write(raw_data)
+    def decrypt(**params):
+        filename = params.get("filename", "file")
+        crypt_file = params.get("crypt_file", f"{filename}.dat")
+        key_file = params.get("keyfile", f"{filename}.key")
+        try:
+            encrypted_data = open(crypt_file, "rb").read()
+        except IOError:
+            print(f"encrypted file '{crypt_file}' not found.")
+        else:
+            try:
+                raw_key = open(key_file, "rb").read()
+            except IOError:
+                print(f"key-file '{key_file}' not found")
+            else:
+                raw_data = bytes(a ^ b for (a, b) in zip(encrypted_data, raw_key))
+                with open("d_" + filename, "wb") as decrypted_out:
+                    decrypted_out.write(raw_data)

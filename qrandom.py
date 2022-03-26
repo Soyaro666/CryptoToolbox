@@ -33,7 +33,7 @@ class QRandom:
         characters = params.get("charset", QRandom._alphabet())
         random.shuffle(characters)
         for i in range(num):
-            rng = int(round(self.get(max=len(characters) - 1)))
+            rng = int(round(self.get(max=len(characters)-1)))
             pwd += characters[rng]
         return pwd
 
