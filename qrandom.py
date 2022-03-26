@@ -7,15 +7,6 @@ import secrets
 
 class QRandom:
     @staticmethod
-    def _alphabet():
-        characters = []
-        remove = ['\n', '\r', '\t', '\x0b', '\x0c']
-        for i in range(len(string.printable)):
-            if string.printable[i] not in remove:
-                characters.append(string.printable[i])
-        return characters
-
-    @staticmethod
     def _quantum(**params):
         length = str(params.get("length", 16))
         encoding = params.get("encoding", "uint8")
@@ -27,10 +18,22 @@ class QRandom:
         result = json.loads(data)
         return result
 
+    @staticmethod
+    def alphabet():
+        characters = []
+        remove = ['\n', '\r', '\t', '\x0b', '\x0c']
+        for i in range(len(string.printable)):
+            if string.printable[i] not in remove:
+                characters.append(string.printable[i])
+        return characters
+
     def generate_pwd(self, **params):
         pwd = ''
         num = params.get("num", 16)
-        characters = params.get("charset", QRandom._alphabet())
+        characters = params.get("charset", QRandom.alphabet())
+        while num > 1024:
+            pwd += self.generate_pwd(num=1024, charset=characters)
+            num -= 1024
         random.shuffle(characters)
         for i in range(num):
             rng = int(round(self.get(max=len(characters)-1)))
@@ -112,7 +115,7 @@ class QRandom:
         if self.length > 1024:
             self.length = 1024
         self.encoding = params.get("encoding", "uint16")
+        self.size = params.get("size", 1)
         if self.encoding not in codings:
             raise ValueError(f"encoding must be one of: {str(codings)}")
-        self.size = params.get("size", 1)
         self.set()
