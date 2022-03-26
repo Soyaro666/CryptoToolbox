@@ -37,35 +37,38 @@ class Crypter:
         return key
 
     @staticmethod
-    def encrypt(filename):
+    def encode(**params):
+        input_file = params.get("input_file", "file")
+        output_file = params.get("output_file", f"{input_file}.out")
+        key_file = params.get("key_file", "None")
+        keyfile_name = params.get("key_name", f"{input_file}.key")
+        raw_key = b''
+        result = ''
         try:
-            raw_data = open(filename, "rb").read()
+            raw_data = open(input_file, "rb").read()
         except IOError:
-            print(f"file {filename} not found.")
+            result = f"input-file '{input_file}' not found."
         else:
             file_size = len(raw_data)
-            raw_key = Crypter.generate_key(file_size)
-            with open(filename + ".key", "wb") as key_out:
-                key_out.write(raw_key)
-            encrypted = bytes(a ^ b for (a, b) in zip(raw_data, raw_key))
-            with open(filename + ".dat", "wb") as encrypted_out:
-                encrypted_out.write(encrypted)
-
-    @staticmethod
-    def decrypt(**params):
-        filename = params.get("filename", "file")
-        crypt_file = params.get("crypt_file", f"{filename}.dat")
-        key_file = params.get("keyfile", f"{filename}.key")
-        try:
-            encrypted_data = open(crypt_file, "rb").read()
-        except IOError:
-            print(f"encrypted file '{crypt_file}' not found.")
-        else:
-            try:
-                raw_key = open(key_file, "rb").read()
-            except IOError:
-                print(f"key-file '{key_file}' not found")
+            if key_file == "None":
+                key_file = f"{input_file}.key"
+                raw_key = Crypter.generate_key(file_size)
+                with open(keyfile_name, "wb") as key_out:
+                    key_out.write(raw_key)
             else:
-                raw_data = bytes(a ^ b for (a, b) in zip(encrypted_data, raw_key))
-                with open("d_" + filename, "wb") as decrypted_out:
-                    decrypted_out.write(raw_data)
+                try:
+                    raw_key = open(key_file, "rb").read()
+                except IOError:
+                    result = f"key-file '{key_file}' not found"
+                else:
+                    key_size = len(raw_key)
+                    if key_size < file_size:
+                        raw_key += Crypter.generate_key(file_size - key_size)
+                        with open(key_file, "wb") as key_out:
+                            key_out.write(raw_key)
+            if len(raw_key) > 0:
+                encrypted = bytes(a ^ b for (a, b) in zip(raw_data, raw_key))
+                with open(output_file, "wb") as encrypted_out:
+                    encrypted_out.write(encrypted)
+                result = f"encrypted '{input_file}' with '{key_file}' to '{output_file}'"
+        return result
