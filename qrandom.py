@@ -18,41 +18,7 @@ class QRandom:
         result = json.loads(data)
         return result
 
-    @staticmethod
-    def alphabet():
-        characters = []
-        remove = ['\n', '\r', '\t', '\x0b', '\x0c']
-        for i in range(len(string.printable)):
-            if string.printable[i] not in remove:
-                characters.append(string.printable[i])
-        return characters
-
-    def generate_pwd(self, **params):
-        pwd = ''
-        num = params.get("num", 16)
-        characters = params.get("charset", QRandom.alphabet())
-        while num > 1024:
-            pwd += self.generate_pwd(num=1024, charset=characters)
-            num -= 1024
-        random.shuffle(characters)
-        for i in range(num):
-            rng = int(round(self.get(max=len(characters)-1)))
-            pwd += characters[rng]
-        return pwd
-
-    def get(self, **params):
-        start = int(params.get("min", 0))
-        end = int(params.get("max", 0))
-        if start > end:
-            start, end = end, start
-        rng = round(float(self), 5)
-        rng = round(rng / 65535, 5)
-        tmp = end - start
-        result = round(rng * tmp, 5)
-        result += start
-        return result
-
-    def set(self):
+    def _set(self):
         tmp_data = {"success": False}
         try:
             tmp_data = QRandom._quantum(length=self.length,
@@ -75,47 +41,121 @@ class QRandom:
         if tmp_data["success"]:
             self._data = tmp_data["data"]
         else:
-            raise Exception("error in QRandom.set(): success = False")
+            raise Exception("error in QRandom._set(): success = False")
         self.index = 0
         return True
+
+    @staticmethod
+    def alphabet():
+        """returns a full _set of printable characters"""
+        characters = []
+        remove = ['\n', '\r', '\t', '\x0b', '\x0c']
+        for i in range(len(string.printable)):
+            if string.printable[i] not in remove:
+                characters.append(string.printable[i])
+        return characters
+
+    def generate_pwd(self, **params):
+        """generates a password based on a quantum random generator
+
+        possible params:
+        num (optional) defines the length of the password
+        defaults to 16 if not specified
+
+        charset (optional) a list of characters you want to generate a password from
+        defaults to the QRandom-method alphabet() if not specified"""
+
+        pwd = ''
+        num = params.get("num", 16)
+        characters = params.get("charset", self.alphabet())
+        while num > 1024:
+            pwd += self.generate_pwd(num=1024, charset=characters)
+            num -= 1024
+        random.shuffle(characters)
+        for i in range(num):
+            rng = int(round(self.get(max=len(characters)-1)))
+            pwd += characters[rng]
+        return pwd
+
+    def get(self, **params):
+        """generates a random float-type number between two given numbers
+
+        possible params:
+        min: integer or float
+        max: integer or float
+        if one is specified the random number will be between (including) 0 and the given number
+        if both are specified the random number will be between (including) both given numbers"""
+        start = float(params.get("min", 0))
+        end = float(params.get("max", 0))
+        if start > end:
+            start, end = end, start
+        rng = round(float(self), 6)
+        if self.encoding == "uint16":
+            rng = round(rng / 65535, 6)
+        else:
+            rng = round(rng / 255, 6)
+        tmp = end - start
+        result = round(rng * tmp, 6)
+        result += start
+        return result
 
     def __int__(self):
         result = int(self._data[self.index])
         self.index += 1
         if self.index > len(self._data):
-            self.set()
+            self._set()
         return result
 
     def __float__(self):
         result = float(self._data[self.index])
         self.index += 1
         if self.index > len(self._data):
-            self.set()
+            self._set()
+        return result
+
+    def __str__(self):
+        result = str(self._data[self.index])
+        self.index += 1
+        if self.index > len(self._data):
+            self._set()
         return result
 
     def __repr__(self):
         result = self._data[self.index]
         self.index += 1
         if self.index > len(self._data):
-            self.set()
-        return result
-
-    def __str__(self):
-        result = str(f"random number: {self._data[self.index]}")
-        self.index += 1
-        if self.index > len(self._data):
-            self.set()
+            self._set()
         return result
 
     def __init__(self, **params):
+        """creates a QRandom-Object that can be used to create quantum-random numbers
+
+        possible parameters:
+        length (optional, can be 1 to 1024, defaults to 1024)
+        defines the amount of random values the object prepares
+
+        encoding: (optional, can be 'uint8', 'uint16' or 'hex16', defaults to 'uint16')
+        if value is 'uint8' the object will generate random values between 0 and 255
+        if value is 'uint16' the object will generate random values between 0 and 65535
+        if value is 'hex16' the object will generate [size] random values between 00 and ff per number
+
+        size: (optional, can be 1 to 1024)
+        defaults to 1 if encoding is hex16
+        is ignored if encoding is not hex16
+
+        if at any given time the QRNG-api isn't available the code defaults to using
+        pythons secrets-module to generate random values according to the given parameters"""
         self.index = 0
         self._data = []
         codings = ["uint8", "uint16", "hex16"]
         self.length = params.get("length", 1024)
         if self.length > 1024:
             self.length = 1024
-        self.encoding = params.get("encoding", "uint16")
+        self.encoding = "uint16"
+        encoding = params.get("encoding", "uint16")
         self.size = params.get("size", 1)
-        if self.encoding not in codings:
+        if encoding not in codings:
             raise ValueError(f"encoding must be one of: {str(codings)}")
-        self.set()
+        else:
+            self.encoding = encoding
+        self._set()

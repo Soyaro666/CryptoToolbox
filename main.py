@@ -21,10 +21,10 @@ def get_integer(**params):
 
 
 def print_list(options: list):
-    print("\033[H\033[3J", end="")
+    print("")
     for index in range(1, len(options)):
         print(f"{index}.: {options[index]}")
-    print(f"0.: {options[0]}")
+    print(f"0.: {options[0]}\n")
 
 
 def main():
@@ -40,7 +40,8 @@ def main():
         options = ["exit",
                    "output random number in range",
                    "Generate a random Password",
-                   "encode a file"]
+                   "encode a file",
+                   "play rock, paper, scissors"]
         print_list(options)
         choice = get_integer()
         if not 0 <= choice < len(options):
@@ -186,6 +187,40 @@ def main():
                     print(response)
                     input("press enter to continue")
             choice = 999
+        elif choice == 4:
+            player_choice = 4
+            options = ["exit", "rock", "paper", "scissors"]
+            print("\nWhat does this have to do with a CryptoToolbox, you may ask.")
+            print("Simple: you're manually giving a number. This will be compared to",
+                  "a number from the quantum random generator.")
+            print("If your number is one bigger than the random one you win.")
+            print("if your number is one smaller than the random one you lose.")
+            print("if the numbers are equal it's a pass, nobody wins or loses.")
+            while player_choice > 3:
+                print("\nReady?")
+                print_list(options)
+                player_choice = get_integer()
+                if not 0 <= player_choice < len(options):
+                    print("not an option")
+                    choice = 999
+                    input("press enter to continue")
+                elif player_choice > 0:
+                    print(f"\nyou chose {options[player_choice]}")
+                    npc_choice = int(round(rng_obj.get(min=1, max=3), 0))
+                    print(f"I chose {options[npc_choice]}")
+                    diff = npc_choice - player_choice
+                    if diff < -1:
+                        diff += 3
+                    if diff > 1:
+                        diff -= 3
+
+                    if diff == 0:
+                        print("pass, we chose the same.")
+                    elif diff > 0:
+                        print(f"I win, {options[npc_choice]} over {options[player_choice]}")
+                    elif diff < 0:
+                        print(f"You win, {options[player_choice]} over {options[npc_choice]}")
+                    player_choice = 4
 
 
 if __name__ == '__main__':
