@@ -107,28 +107,28 @@ class QRandom:
     def __int__(self):
         result = int(self._data[self.index])
         self.index += 1
-        if self.index > len(self._data):
+        if self.index >= len(self._data):
             self._set()
         return result
 
     def __float__(self):
         result = float(self._data[self.index])
         self.index += 1
-        if self.index > len(self._data):
+        if self.index >= len(self._data):
             self._set()
         return result
 
     def __str__(self):
         result = str(self._data[self.index])
         self.index += 1
-        if self.index > len(self._data):
+        if self.index >= len(self._data):
             self._set()
         return result
 
     def __repr__(self):
         result = self._data[self.index]
         self.index += 1
-        if self.index > len(self._data):
+        if self.index >= len(self._data):
             self._set()
         return result
 
