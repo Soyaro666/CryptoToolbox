@@ -87,15 +87,20 @@ class QRandom:
         if both are specified the random number will be between (including) both given numbers"""
         start = float(params.get("min", 0))
         end = float(params.get("max", 0))
+        num_range = end - start
+        encoding_max = {"uint8": 255, "uint16": 65535}[self.encoding]
+        digits = len(str(encoding_max)) * 2
+        count = 1
         if start > end:
             start, end = end, start
-        rng = round(float(self), 6)
-        if self.encoding == "uint16":
-            rng = round(rng / 65535, 6)
-        else:
-            rng = round(rng / 255, 6)
-        tmp = end - start
-        result = round(rng * tmp, 6)
+        rng = round(float(self), digits)
+        total_max = num_range - encoding_max
+        while total_max > encoding_max:
+            rng += round(float(self), digits)
+            count += 1
+            total_max = num_range - (encoding_max * count)
+        rng = round(rng / (encoding_max * count), digits)
+        result = round(rng * num_range, digits)
         result += start
         return result
 
