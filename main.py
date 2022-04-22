@@ -195,7 +195,7 @@ def main():
                   "a number from the quantum random generator.")
             print("If your number is one bigger than the random one you win.")
             print("if your number is one smaller than the random one you lose.")
-            print("if the numbers are equal it's a pass, nobody wins or loses.")
+            print("if the numbers are equal it's a draw, nobody wins or loses.")
             while player_choice > 3:
                 print("\nReady?")
                 print_list(options)
